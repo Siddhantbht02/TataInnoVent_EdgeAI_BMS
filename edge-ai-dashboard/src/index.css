@@ -1,0 +1,95 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  background: #070b13;
+  color: #E5E7EB;
+}
+
+h1, h2, h3, h4, h5, h6, .font-heading {
+  font-family: 'Outfit', sans-serif;
+}
+
+body {
+  @apply bg-bg text-slate-100 min-h-screen;
+}
+
+::selection {
+  background: rgba(59, 130, 246, 0.25);
+}
+
+.dashboard-shell {
+  background: radial-gradient(circle at 15% 15%, rgba(59, 130, 246, 0.18), transparent 35%),
+    radial-gradient(circle at 80% 20%, rgba(139, 92, 246, 0.08), transparent 25%),
+    radial-gradient(circle at bottom right, rgba(34, 197, 94, 0.05), transparent 30%),
+    #070b13;
+}
+
+.glass-card {
+  background: rgba(13, 20, 35, 0.82);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+/* Custom range input slider styling for premium look */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 9999px;
+  height: 6px;
+  outline: none;
+  transition: background 0.15s ease-in-out;
+}
+
+input[type="range"]:hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #3B82F6;
+  cursor: pointer;
+  box-shadow: 0 0 12px rgba(59, 130, 246, 0.6);
+  transition: transform 0.1s ease, background 0.1s ease;
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.25);
+  background: #60A5FA;
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border: 0;
+  border-radius: 50%;
+  background: #3B82F6;
+  cursor: pointer;
+  box-shadow: 0 0 12px rgba(59, 130, 246, 0.6);
+  transition: transform 0.1s ease, background 0.1s ease;
+}
+
+input[type="range"]::-moz-range-thumb:hover {
+  transform: scale(1.25);
+  background: #60A5FA;
+}
+
+/* Hide scrollbars globally across all elements to maintain clean design */
+::-webkit-scrollbar {
+  display: none;
+}
+* {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
