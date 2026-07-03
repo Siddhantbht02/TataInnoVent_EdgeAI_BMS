@@ -92,7 +92,7 @@ function App() {
 
   const round = (val, dec) => parseFloat(val.toFixed(dec));
 
-  const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+  const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://tatainnovent-edgeai-bms.onrender.com';
 
   const runPrediction = async (currentCycle, currentVoltage, currentTemp, currentCapacity, currentMaxCap) => {
     setLoading(true);
