@@ -17,6 +17,14 @@ h1, h2, h3, h4, h5, h6, .font-heading {
 
 body {
   @apply bg-bg text-slate-100 min-h-screen;
+  height: 100vh;
+  max-height: 100vh;
+  overflow: hidden;
+}
+
+html {
+  height: 100vh;
+  overflow: hidden;
 }
 
 ::selection {
@@ -24,17 +32,16 @@ body {
 }
 
 .dashboard-shell {
-  background: radial-gradient(circle at 15% 15%, rgba(59, 130, 246, 0.18), transparent 35%),
-    radial-gradient(circle at 80% 20%, rgba(139, 92, 246, 0.08), transparent 25%),
-    radial-gradient(circle at bottom right, rgba(34, 197, 94, 0.05), transparent 30%),
-    #070b13;
+  background: radial-gradient(circle at 15% 15%, rgba(59, 130, 246, 0.12), transparent 35%),
+    radial-gradient(circle at 80% 20%, rgba(139, 92, 246, 0.05), transparent 25%),
+    radial-gradient(circle at bottom right, rgba(34, 197, 94, 0.03), transparent 30%);
 }
 
 .glass-card {
-  background: rgba(13, 20, 35, 0.82);
+  background: rgba(8, 14, 27, 0.52);
   backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
 /* Custom range input slider styling for premium look */
@@ -92,4 +99,24 @@ input[type="range"]::-moz-range-thumb:hover {
 * {
   -ms-overflow-style: none;  /* IE and Edge */
   scrollbar-width: none;  /* Firefox */
+}
+
+/* Hide Spline credit watermark/logo link */
+#spline-logo,
+a[href*="spline.design"],
+a[href*="spline.com"],
+a[href*="spline"] {
+  display: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  height: 0 !important;
+  width: 0 !important;
+  overflow: hidden !important;
+}
+
+/* Crop the WebGL watermark outside the container */
+.spline-canvas-wrapper canvas {
+  transform: scale(1.10) translate(2.5%, 2.5%) !important;
+  transform-origin: center center !important;
 }

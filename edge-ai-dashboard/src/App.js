@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import Spline from '@splinetool/react-spline';
 import {
   BatteryCharging,
   Cpu,
@@ -12,7 +13,8 @@ import {
   Clock,
   Sparkles as InsightsIcon,
   Shield,
-  Layers
+  Layers,
+  X
 } from 'lucide-react';
 import {
   LineChart,
@@ -46,6 +48,28 @@ function StatCard({ label, value, icon, color }) {
 }
 
 function App() {
+  const [splineLoaded, setSplineLoaded] = useState(false);
+  const [showLogsModal, setShowLogsModal] = useState(false);
+
+  // Effect to hide Spline watermark logo inside Shadow DOM
+  useEffect(() => {
+    const hideSplineLogo = () => {
+      const splineViewer = document.querySelector('spline-viewer');
+      if (splineViewer && splineViewer.shadowRoot) {
+        const logo = splineViewer.shadowRoot.getElementById('logo');
+        if (logo) {
+          logo.style.display = 'none';
+          logo.style.opacity = '0';
+          logo.style.pointerEvents = 'none';
+        }
+      }
+    };
+
+    hideSplineLogo();
+    const interval = setInterval(hideSplineLogo, 500);
+    return () => clearInterval(interval);
+  }, []);
+
   // Input parameters state for simulation
   const [cycle, setCycle] = useState(524);
   const [voltage, setVoltage] = useState(3.98);
@@ -176,14 +200,41 @@ function App() {
   const strokeDashoffset = circumference * (1 - soh / 100);
 
   return (
-    <div className="dashboard-shell min-h-screen px-6 py-6 text-slate-100 bg-[#070b13]">
-      <main className="w-full flex flex-col gap-6">
-        
-        {/* Header */}
+    <div className="relative w-screen h-screen min-h-screen max-h-screen text-slate-100 bg-[#070b13] overflow-hidden font-sans flex items-center justify-center p-3 sm:p-4 md:p-6">
+      
+      {/* Global Glassmorphic HUD Loader */}
+      {!splineLoaded && (
+        <div className="fixed inset-0 bg-[#070b13] backdrop-blur-md z-50 flex flex-col items-center justify-center transition-all duration-500">
+          <div className="relative flex items-center justify-center w-24 h-24 mb-6">
+            {/* Spinning Outer Ring */}
+            <div className="absolute inset-0 rounded-full border-4 border-accent/20 border-t-accent animate-spin" />
+            {/* Pulsing Core */}
+            <div className="w-12 h-12 rounded-full bg-accent/20 border border-accent/50 animate-pulse flex items-center justify-center">
+              <Activity size={24} className="text-accent animate-pulse" />
+            </div>
+          </div>
+          <h2 className="text-xl font-bold uppercase tracking-[0.25em] text-white font-heading">Calibrating Digital Twin</h2>
+          <p className="text-xs text-slate-500 mt-2 uppercase tracking-widest font-heading">Downloading 3D Telemetry Assets...</p>
+        </div>
+      )}
+
+      {/* Main Dashboard Layout Wrapper (Full horizontal length header) */}
+      <div className="relative z-10 w-full h-full max-h-full max-w-[1600px] mx-auto flex flex-col justify-between gap-4 overflow-hidden">
+
+        {/* Header (Fully transparent panel spanning the whole horizontal length) */}
         <header className="glass-card rounded-[2rem] border border-white/10 p-6 shadow-soft flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-          <div>
-            <p className="text-slate-400 uppercase tracking-[0.24em] text-xs font-heading">Edge AI Battery Intelligence System</p>
-            <h1 className="mt-3 text-3xl font-extrabold font-heading text-white">Operational Command Center</h1>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-6">
+            <div>
+              <p className="text-slate-400 uppercase tracking-[0.24em] text-xs font-heading">Edge AI Battery Intelligence System</p>
+              <h1 className="mt-2 text-2xl font-extrabold font-heading text-white">Operational Command Center</h1>
+            </div>
+            <button
+              onClick={() => setShowLogsModal(true)}
+              className="mt-2 sm:mt-4 px-5 py-2.5 rounded-full bg-accent/15 border border-accent/40 text-accent hover:bg-accent hover:text-white shadow-[0_0_15px_rgba(59,130,246,0.2)] hover:shadow-[0_0_25px_rgba(59,130,246,0.4)] transition-all font-heading text-xs uppercase tracking-[0.2em] flex items-center gap-2 cursor-pointer"
+            >
+              <Activity size={14} className="animate-pulse" />
+              AI Observations & Logs
+            </button>
           </div>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {[
@@ -192,7 +243,7 @@ function App() {
               { label: 'Telemetry Mode', value: error ? 'Simulated' : 'Live ECU API' },
               { label: 'Edge AI Status', value: 'Online', status: 'success' }
             ].map((item) => (
-              <div key={item.label} className="glass-card rounded-3xl border border-white/10 px-4 py-3">
+              <div key={item.label} className="glass-card rounded-3xl border border-white/10 px-4 py-3 bg-slate-950/20">
                 <p className="text-[11px] uppercase tracking-[0.28em] text-slate-500 font-heading">{item.label}</p>
                 <p className="mt-2 text-sm font-bold text-white flex items-center gap-2 font-heading">
                   {item.value}
@@ -203,108 +254,79 @@ function App() {
           </div>
         </header>
 
-        {/* SOH Output Card (Featured Banner at the Top) */}
-        <motion.div
-          initial={{ opacity: 0, y: 24 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.45 }}
-          className="glass-card relative overflow-hidden rounded-[2rem] border border-white/10 p-6 shadow-glow"
-        >
-          <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-accent/15 to-transparent" />
-          <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between relative z-10">
-            <div>
-              <p className="text-slate-400 uppercase tracking-[0.24em] text-xs font-heading">Core Analysis Summary</p>
-              <h2 className="mt-2 text-2xl font-bold text-slate-300 font-heading">Battery State of Health (SOH)</h2>
-              <div className="mt-4 flex items-baseline gap-2">
-                <span className="text-6xl font-extrabold text-white font-heading">{soh}%</span>
-                <span className="text-slate-400 text-sm">efficiency</span>
-              </div>
-              <p className="mt-4 text-slate-300 text-sm flex items-center gap-2">
-                Status Assessment:
-                <span className={`font-bold px-3 py-1 rounded-full text-xs bg-white/5 border border-white/10 ${statusColor}`}>
-                  {statusText}
-                </span>
-              </p>
-            </div>
+        {/* Dashboard Content split row */}
+        <div className="grid gap-6 lg:grid-cols-12 items-stretch flex-grow my-2 overflow-hidden min-h-0">
 
-            <div className="flex flex-col sm:flex-row items-center gap-8">
-              {/* Micro Stats inside Banner */}
-              <div className="grid gap-3 grid-cols-2 w-full sm:w-auto">
-                {[
-                  { label: 'Battery ID', value: 'BP-1204' },
-                  { label: 'Cell Grouping', value: '96S1P (Li-Ion)' },
-                  { label: 'Diagnostics Status', value: 'BMS Nominal' },
-                  { label: 'Cell Status', value: 'Optimized' }
-                ].map((item) => (
-                  <div key={item.label} className="glass-card rounded-2xl border border-white/5 px-4 py-3 bg-slate-950/20 min-w-[140px]">
-                    <p className="text-[10px] uppercase tracking-[0.24em] text-slate-500 font-heading">{item.label}</p>
-                    <p className="mt-1.5 text-xs font-bold text-white font-heading">{item.value}</p>
-                  </div>
-                ))}
-              </div>
-
-              {/* Circular Gauge */}
-              <div className="relative flex h-48 w-48 items-center justify-center text-center">
-                <svg className="absolute w-full h-full transform -rotate-90" viewBox="0 0 192 192">
-                  <circle
-                    cx="96"
-                    cy="96"
-                    r={radius}
-                    className="stroke-white/5 fill-transparent"
-                    strokeWidth={strokeWidth}
-                  />
-                  <circle
-                    cx="96"
-                    cy="96"
-                    r={radius}
-                    className="fill-transparent transition-all duration-300"
-                    stroke={statusStroke}
-                    strokeWidth={strokeWidth}
-                    strokeDasharray={circumference}
-                    strokeDashoffset={strokeDashoffset}
-                    strokeLinecap="round"
-                    filter="drop-shadow(0px 0px 8px rgba(59,130,246,0.3))"
-                  />
-                </svg>
-                <div className="relative flex flex-col h-36 w-36 items-center justify-center rounded-full bg-[#0D1527] shadow-[inset_0_0_20px_rgba(255,255,255,0.03)] border border-white/5">
-                  <p className="text-slate-400 text-[10px] uppercase tracking-[0.2em] font-heading">Health</p>
-                  <p className="mt-1 text-3xl font-extrabold text-white font-heading">{soh}%</p>
-                </div>
-              </div>
+          {/* Sticky Left Column: 3D Spline Digital Twin (Static & Non-Movable) */}
+          <div className="lg:col-span-4 h-full rounded-[2rem] overflow-hidden bg-transparent pointer-events-none relative flex items-center justify-center">
+            {/* Ambient radial overlay to blend model into background */}
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,transparent_35%,rgba(7,11,19,0.85)_90%)] pointer-events-none z-10" />
+            <div className="w-full h-full pointer-events-none spline-canvas-wrapper">
+              <Spline 
+                scene="https://prod.spline.design/pp7S2-vaxeiawWvF/scene.splinecode"
+                onLoad={() => setSplineLoaded(true)}
+              />
             </div>
           </div>
-        </motion.div>
 
-        {/* Main Grid (Two columns layout balanced to be of equal heights) */}
-        <section className="grid gap-6 xl:grid-cols-12">
-          
-          {/* Left Column (Interactive Simulator, AI Observations & Strategies) - Spans 6 cols */}
-          <div className="xl:col-span-6 flex flex-col gap-6">
-            
-            {/* Interactive SOH Simulator Card */}
-            <motion.div
-              initial={{ opacity: 0, y: 24 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.45 }}
-              className="glass-card relative overflow-hidden rounded-[2rem] border border-white/10 p-6 shadow-glow animate-glow"
-            >
-              <div className="absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-accent/15 to-transparent" />
-              <div className="flex items-center gap-3 mb-6 relative z-10">
-                <div className="rounded-2xl bg-accent/10 p-3 text-accent shadow-[0_0_10px_rgba(59,130,246,0.15)]">
-                  <Cpu size={20} />
-                </div>
-                <div>
-                  <p className="text-slate-400 uppercase tracking-[0.24em] text-xs font-heading">Edge AI Simulator</p>
-                  <h2 className="text-2xl font-bold text-white font-heading">Interactive SOH Predictor</h2>
-                </div>
-              </div>
+          <main className="lg:col-span-8 flex flex-col justify-center h-full gap-6">
 
-              <div className="grid gap-6 md:grid-cols-2 relative z-10">
-                <div className="space-y-4">
+            {/* Split Row: Optimal Strategy (Left) & SOH Control Panel (Right - Small/Compact) */}
+            <section className="grid gap-6 md:grid-cols-2">
+              {/* Charging Recommendations (Optimal Strategy) */}
+              <motion.div 
+                initial={{ opacity: 0, y: 24 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.45 }}
+                className="glass-card rounded-[2rem] border border-white/10 p-6 shadow-soft flex flex-col justify-between"
+              >
+                <div className="flex items-center justify-between gap-3">
                   <div>
-                    <div className="flex justify-between text-sm text-slate-300 mb-1.5 font-heading">
+                    <p className="text-slate-400 uppercase tracking-[0.24em] text-xs font-heading">Charging Recommendation</p>
+                    <h2 className="mt-2 text-2xl font-bold text-white font-heading">Optimal Strategy</h2>
+                  </div>
+                  <Zap size={24} className="text-warning animate-pulse" />
+                </div>
+                <div className="mt-6 space-y-3.5 flex-grow flex flex-col justify-center">
+                  {[
+                    { title: 'Recommended Charge Profile', detail: temperature > 40.0 ? 'Slow AC Trickle Charge' : soh < 80.0 ? 'Controlled AC Charging' : 'Normal AC Charging' },
+                    { title: 'DC Fast Charge Status', detail: temperature > 35.0 ? 'Not Recommended (High Temp)' : soh < 80.0 ? 'Avoid (High Degradation)' : 'Supported (< 80% SOC)' },
+                    { title: 'Target Charge Limit', detail: soh < 85.0 ? '75% (Prolong Life)' : '80% (Recommended)' }
+                  ].map((item) => (
+                    <div key={item.title} className="glass-card rounded-3xl border border-white/10 bg-slate-900/60 p-4">
+                      <p className="text-[11px] uppercase tracking-[0.28em] text-slate-500 font-heading">{item.title}</p>
+                      <p className="mt-2 text-white font-bold font-heading">{item.detail}</p>
+                    </div>
+                  ))}
+                </div>
+              </motion.div>
+
+              {/* SOH Control Panel (Small/Compact Sliders) */}
+              <motion.div
+                initial={{ opacity: 0, y: 24 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.45, delay: 0.1 }}
+                className="glass-card relative overflow-hidden rounded-[2rem] border border-white/10 p-5 shadow-glow flex flex-col justify-between"
+              >
+                <div className="absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-accent/15 to-transparent pointer-events-none" />
+                
+                {/* Header */}
+                <div className="flex items-center gap-3 mb-4 relative z-10">
+                  <div className="rounded-xl bg-accent/10 p-2 text-accent">
+                    <Cpu size={16} />
+                  </div>
+                  <div>
+                    <p className="text-slate-400 uppercase tracking-[0.24em] text-[10px] font-heading">Edge AI Simulator</p>
+                    <h2 className="text-lg font-bold text-white font-heading">SOH Control Panel</h2>
+                  </div>
+                </div>
+
+                {/* Compact Sliders list */}
+                <div className="space-y-3.5 relative z-10 mb-4">
+                  <div>
+                    <div className="flex justify-between text-[11px] text-slate-300 mb-1 font-heading">
                       <span>Charge Cycles</span>
-                      <span className="font-semibold text-white">{cycle}</span>
+                      <span className="font-semibold text-white">{cycle} Cycles</span>
                     </div>
                     <input
                       type="range"
@@ -317,7 +339,7 @@ function App() {
                   </div>
 
                   <div>
-                    <div className="flex justify-between text-sm text-slate-300 mb-1.5 font-heading">
+                    <div className="flex justify-between text-[11px] text-slate-300 mb-1 font-heading">
                       <span>Cell Voltage</span>
                       <span className="font-semibold text-white">{voltage.toFixed(2)} V</span>
                     </div>
@@ -333,7 +355,7 @@ function App() {
                   </div>
 
                   <div>
-                    <div className="flex justify-between text-sm text-slate-300 mb-1.5 font-heading">
+                    <div className="flex justify-between text-[11px] text-slate-300 mb-1 font-heading">
                       <span>Cell Temperature</span>
                       <span className="font-semibold text-white">{temperature.toFixed(1)} °C</span>
                     </div>
@@ -349,7 +371,7 @@ function App() {
                   </div>
 
                   <div>
-                    <div className="flex justify-between text-sm text-slate-300 mb-1.5 font-heading">
+                    <div className="flex justify-between text-[11px] text-slate-300 mb-1 font-heading">
                       <span>Current Capacity</span>
                       <span className="font-semibold text-white">{capacity.toFixed(2)} Ah</span>
                     </div>
@@ -371,7 +393,7 @@ function App() {
                   </div>
 
                   <div>
-                    <div className="flex justify-between text-sm text-slate-300 mb-1.5 font-heading">
+                    <div className="flex justify-between text-[11px] text-slate-300 mb-1 font-heading">
                       <span>Nominal Max Capacity</span>
                       <span className="font-semibold text-white">{maxCapacity.toFixed(2)} Ah</span>
                     </div>
@@ -393,82 +415,43 @@ function App() {
                   </div>
                 </div>
 
-                <div className="glass-card rounded-3xl bg-[#0b0f19] p-5 border border-white/5 flex flex-col justify-between shadow-soft">
+                {/* SOH Prediction indicator (Bigger Battery Symbol) */}
+                <div className="pt-3 border-t border-white/5 flex items-center justify-between relative z-10">
                   <div>
-                    <h3 className="text-xs uppercase tracking-[0.2em] text-slate-400 mb-4 flex items-center gap-1.5 font-heading">
-                      <BatteryCharging size={12} className="text-accent" />
-                      Cell Visual Telemetry
-                    </h3>
-                    
-                    {/* Visual Battery Graphic */}
-                    <div className="flex items-center justify-center py-4">
-                      <div className="relative w-36 h-16 border-2 border-white/20 rounded-lg p-1 flex items-center gap-1">
-                        {/* Inner Charge Bars */}
-                        {Array.from({ length: 4 }).map((_, idx) => {
-                          const threshold = (idx + 1) * 25;
-                          const isFilled = soh >= threshold;
-                          return (
-                            <div
-                              key={idx}
-                              className={`h-full flex-1 rounded-sm transition-all duration-300 ${
-                                isFilled
-                                  ? soh >= 90
-                                    ? 'bg-success shadow-[0_0_8px_rgba(34,197,94,0.4)]'
-                                    : soh >= 80
-                                    ? 'bg-warning shadow-[0_0_8px_rgba(245,158,11,0.4)]'
-                                    : 'bg-danger shadow-[0_0_8px_rgba(239,68,68,0.4)]'
-                                  : 'bg-white/5'
-                              }`}
-                            />
-                          );
-                        })}
-                        {/* Battery Positive Terminal Tip */}
-                        <div className="absolute -right-3 top-1/2 -translate-y-1/2 w-2 h-6 bg-white/20 rounded-r-sm" />
-                      </div>
-                    </div>
-
-                    <div className="space-y-2 text-xs mt-2">
-                      <div className="flex justify-between border-b border-white/5 pb-1">
-                        <span className="text-slate-400 font-heading">Cell Balance:</span>
-                        <span className="text-success font-semibold font-heading">Nominal (±0.02V)</span>
-                      </div>
-                      <div className="flex justify-between border-b border-white/5 pb-1">
-                        <span className="text-slate-400 font-heading">Thermal Throttling:</span>
-                        <span className={`${temperature > 45.0 ? 'text-warning font-semibold' : 'text-slate-300'} font-heading`}>
-                          {temperature > 45.0 ? 'Active AC Cooling' : 'Inactive'}
-                        </span>
-                      </div>
-                      <div className="flex justify-between border-b border-white/5 pb-1">
-                        <span className="text-slate-400 font-heading">Internal Resistance:</span>
-                        <span className="text-white font-semibold font-heading">18 mΩ</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-slate-400 font-heading">Est. Remaining Life:</span>
-                        <span className="text-white font-semibold font-heading">{Math.max(100, 1500 - cycle)} Cycles</span>
-                      </div>
-                    </div>
+                    <p className="text-[9px] uppercase tracking-[0.24em] text-slate-400 font-heading">SOH Prediction</p>
+                    <p className="text-xl font-extrabold font-heading mt-0.5" style={{ color: statusStroke }}>{soh}%</p>
                   </div>
-
-                  <div className="mt-4 pt-3 border-t border-white/5 flex items-center justify-between">
-                    <span className="text-slate-400 text-[10px] flex items-center gap-1.5 font-heading">
-                      <span className={`inline-flex h-2 w-2 rounded-full ${error ? 'bg-amber-500 animate-pulse shadow-[0_0_8px_rgba(245,158,11,0.5)]' : 'bg-success shadow-[0_0_8px_rgba(34,197,94,0.5)]'}`} />
-                      {error ? 'Telemetry Simulator Active' : 'ECU Feed Active'}
-                    </span>
+                  <div className="flex items-center gap-3">
+                    <div className="w-24 h-9 border border-white/20 rounded-xl p-1 flex items-center relative bg-slate-950/40">
+                      <div 
+                        className="h-full rounded-lg transition-all duration-300" 
+                        style={{ width: `${soh}%`, backgroundColor: statusStroke }} 
+                      />
+                      <div className="absolute -right-1.5 top-1/2 -translate-y-1/2 w-1.5 h-3.5 bg-white/20 rounded-r-md" />
+                    </div>
                   </div>
                 </div>
-              </div>
-            </motion.div>
+              </motion.div>
+            </section>
 
-            {/* Dynamic AI Insights Card */}
-            <motion.div className="glass-card rounded-[2rem] border border-white/10 p-6 shadow-soft flex-1 flex flex-col justify-between">
-              <div className="flex items-center justify-between gap-3 mb-2">
+            {/* Diagnostic Insights (AI Observations) */}
+            <motion.div
+              initial={{ opacity: 0, y: 24 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.45, delay: 0.2 }}
+              className="glass-card rounded-[2rem] border border-white/10 py-4 px-5 shadow-soft"
+            >
+              {/* Balanced Two Line Header */}
+              <div className="flex items-center justify-between gap-3 mb-3">
                 <div>
-                  <p className="text-slate-400 uppercase tracking-[0.24em] text-xs font-heading">AI Insights</p>
-                  <h2 className="text-2xl font-bold text-white font-heading">Operational Observations</h2>
+                  <p className="text-slate-400 uppercase tracking-[0.24em] text-[9px] font-heading">AI Observations</p>
+                  <h2 className="text-base font-bold text-white font-heading">Diagnostic Insights</h2>
                 </div>
-                <InsightsIcon size={24} className="text-accent" />
+                <InsightsIcon size={18} className="text-accent" />
               </div>
-              <ul className="space-y-3 text-slate-300">
+              
+              {/* Balanced Grid */}
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                 {[
                   soh >= 90.0 ? 'Battery degradation is within the expected optimal range.' : 
                   soh >= 80.0 ? 'Mild cell degradation noticed. Keep operating temperatures below 45°C.' :
@@ -477,194 +460,15 @@ function App() {
                   `Estimated capacity loss: ${round((1.0 - (capacity / maxCapacity)) * 100, 2)}% of original capacity.`,
                   `Current cell efficiency: ${round(soh, 1)}%`
                 ].map((insight, idx) => (
-                  <li key={idx} className="rounded-3xl border border-white/10 bg-white/5 p-4 text-sm font-medium leading-relaxed">
+                  <div key={idx} className="rounded-xl border border-white/5 bg-slate-950/20 p-3 text-[11px] font-medium leading-relaxed text-slate-300">
                     {insight}
-                  </li>
-                ))}
-              </ul>
-            </motion.div>
-
-            {/* Charging Recommendations */}
-            <motion.div className="glass-card rounded-[2rem] border border-white/10 p-6 shadow-soft">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <p className="text-slate-400 uppercase tracking-[0.24em] text-xs font-heading">Charging Recommendation</p>
-                  <h2 className="mt-2 text-2xl font-bold text-white font-heading">Optimal Strategy</h2>
-                </div>
-                <Zap size={24} className="text-warning" />
-              </div>
-              <div className="mt-6 space-y-4">
-                {[
-                  { title: 'Recommended Charge Profile', detail: temperature > 40.0 ? 'Slow AC Trickle Charge' : soh < 80.0 ? 'Controlled AC Charging' : 'Normal AC Charging' },
-                  { title: 'DC Fast Charge Status', detail: temperature > 35.0 ? 'Not Recommended (High Temp)' : soh < 80.0 ? 'Avoid (High Degradation)' : 'Supported (< 80% SOC)' },
-                  { title: 'Target Charge Limit', detail: soh < 85.0 ? '75% (Prolong Life)' : '80% (Recommended)' }
-                ].map((item) => (
-                  <div key={item.title} className="glass-card rounded-3xl border border-white/10 bg-slate-900/60 p-4">
-                    <p className="text-[11px] uppercase tracking-[0.28em] text-slate-500 font-heading">{item.title}</p>
-                    <p className="mt-2 text-white font-bold font-heading">{item.detail}</p>
-                  </div>
-                ))}
-              </div>
-            </motion.div>
-          </div>
-
-          {/* Right Column (Metrics, Risk & Degradation Trend Chart) - Spans 6 cols */}
-          <div className="xl:col-span-6 flex flex-col gap-6">
-            
-            {/* Dynamic Real-Time Metrics Card */}
-            <motion.div className="glass-card rounded-[2rem] border border-white/10 p-6 shadow-soft">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <p className="text-slate-400 uppercase tracking-[0.24em] text-xs font-heading">Battery Status</p>
-                  <h2 className="mt-2 text-2xl font-bold text-white font-heading">Real-Time Metrics</h2>
-                </div>
-                <BatteryCharging size={24} className="text-accent" />
-              </div>
-              <div className="mt-6 grid gap-4 sm:grid-cols-2">
-                <StatCard label="SOC" value="82%" icon={Zap} color="accent" />
-                <StatCard label="Cell Temp" value={`${temperature.toFixed(1)}°C`} icon={Thermometer} color="warning" />
-                <StatCard label="Cell Voltage" value={`${voltage.toFixed(2)} V`} icon={Zap} color="accent" />
-                <StatCard label="Cell Capacity" value={`${capacity.toFixed(2)} Ah`} icon={Layers} color="success" />
-                <StatCard label="Sim Cycles" value={cycle.toString()} icon={Activity} color="accent" />
-                <StatCard label="Nominal Max Cap" value={`${maxCapacity.toFixed(2)} Ah`} icon={Shield} color="success" />
-              </div>
-            </motion.div>
-
-            {/* Dynamic Risk Assessment Card */}
-            <motion.div className="glass-card rounded-[2rem] border border-white/10 p-6 shadow-soft">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <p className="text-slate-400 uppercase tracking-[0.24em] text-xs font-heading">Predictive Maintenance</p>
-                  <h2 className="mt-2 text-2xl font-bold text-white font-heading">Risk Assessment</h2>
-                </div>
-                <ShieldCheck size={24} className="text-success" />
-              </div>
-              <div className="mt-6 grid gap-4">
-                {[
-                  { label: 'Current Degradation Risk', value: soh >= 90.0 ? 'LOW' : soh >= 80.0 ? 'MEDIUM' : 'HIGH' },
-                  { label: 'Next Recommended Inspection', value: soh >= 90.0 ? 'After 150 Cycles' : soh >= 80.0 ? 'After 50 Cycles' : 'INSPECT IMMEDIATELY' },
-                  { label: 'Battery Core Health Status', value: statusText }
-                ].map((item) => (
-                  <div key={item.label} className="glass-card rounded-3xl border border-white/10 p-4">
-                    <p className="text-[11px] uppercase tracking-[0.28em] text-slate-500 font-heading">{item.label}</p>
-                    <p className="mt-2 text-sm font-bold text-white font-heading">{item.value}</p>
                   </div>
                 ))}
               </div>
             </motion.div>
 
-            {/* Battery Aging Trend chart */}
-            <motion.div
-              initial={{ opacity: 0, y: 24 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.45, delay: 0.2 }}
-              className="glass-card rounded-[2rem] border border-white/10 p-6 shadow-soft flex-1 flex flex-col justify-between"
-            >
-              <div className="flex items-center justify-between gap-4 mb-4">
-                <div>
-                  <p className="text-slate-400 uppercase tracking-[0.24em] text-xs font-heading">Battery Aging Trend</p>
-                  <h2 className="mt-2 text-2xl font-bold text-white font-heading">Degradation Forecast</h2>
-                </div>
-                <Sparkles size={24} className="text-accent" />
-              </div>
-              <div className="h-72 flex-1 relative">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={trendData} margin={{ top: 10, right: 10, left: -15, bottom: 0 }}>
-                    <defs>
-                      <linearGradient id="lineGradient" x1="0" y1="0" x2="1" y2="0">
-                        <stop offset="0%" stopColor="#3B82F6" stopOpacity={1} />
-                        <stop offset="100%" stopColor="#22C55E" stopOpacity={1} />
-                      </linearGradient>
-                    </defs>
-                    <XAxis dataKey="cycle" tick={{ fill: '#94A3B8', fontSize: 11 }} axisLine={false} tickLine={false} />
-                    <YAxis tick={{ fill: '#94A3B8', fontSize: 11 }} axisLine={false} tickLine={false} domain={[50, 100]} />
-                    <Tooltip contentStyle={{ background: '#0D1527', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 18 }} labelStyle={{ color: '#F8FAFC' }} itemStyle={{ color: '#F8FAFC' }} />
-                    <Line type="monotone" dataKey="soh" stroke="url(#lineGradient)" strokeWidth={4} dot={{ r: 3, fill: '#3B82F6' }} activeDot={{ r: 6 }} />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-              <div className="mt-6 rounded-3xl bg-white/5 p-4 border border-white/10 flex items-center justify-between text-sm">
-                <span className="text-slate-400 font-heading">Current simulated cell coordinates</span>
-                <span className="text-white font-bold font-heading">Cycle {cycle} — SOH {soh}%</span>
-              </div>
-            </motion.div>
-          </div>
-        </section>
-
-        {/* Dynamic Real-Time Sensor Feed */}
-        <motion.div className="glass-card rounded-[2rem] border border-white/10 p-6 shadow-soft">
-          <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-            <div>
-              <p className="text-slate-400 uppercase tracking-[0.24em] text-xs font-heading">Real-Time Sensor Feed</p>
-              <h2 className="mt-2 text-2xl font-bold text-white font-heading">Live Gauge Telemetry</h2>
-            </div>
-            <div className="flex flex-wrap gap-3 text-slate-400">
-              <span className="rounded-full border border-white/10 bg-white/5 px-3 py-2 text-xs font-heading">Reactive Model Inference Logged</span>
-            </div>
-          </div>
-          <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            {[
-              { label: 'Voltage', value: `${voltage.toFixed(2)} V`, fill: (voltage - 3.0) / (4.5 - 3.0) * 100, color: 'accent' },
-              { label: 'Temperature', value: `${temperature.toFixed(1)}°C`, fill: (temperature - 10) / (65 - 10) * 100, color: 'warning' },
-              { label: 'Capacity', value: `${capacity.toFixed(2)} Ah`, fill: (capacity - 1.0) / (2.5 - 1.0) * 100, color: 'success' },
-              { label: 'SOC', value: '82%', fill: 82, color: 'accent' }
-            ].map((sensor) => (
-              <div key={sensor.label} className="glass-card rounded-3xl border border-white/10 p-5 shadow-soft">
-                <div className="flex items-center justify-between">
-                  <p className="text-xs uppercase tracking-[0.24em] text-slate-400 font-heading">{sensor.label}</p>
-                  <span className="text-white font-bold text-sm font-heading">{sensor.value}</span>
-                </div>
-                <div className="mt-4 h-3 rounded-full bg-white/10 overflow-hidden">
-                  <div className="h-full rounded-full bg-accent" style={{ width: `${Math.max(0, Math.min(100, sensor.fill))}%` }} />
-                </div>
-              </div>
-            ))}
-          </div>
-        </motion.div>
-
-        {/* Dynamic Recent Inference Log Table (Moved to full-width position at the bottom) */}
-        <motion.div
-          initial={{ opacity: 0, y: 24 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.45, delay: 0.1 }}
-          className="glass-card rounded-[2rem] border border-white/10 p-6 shadow-soft"
-        >
-          <div className="flex items-center justify-between gap-3 mb-4">
-            <div>
-              <p className="text-slate-400 uppercase tracking-[0.24em] text-xs font-heading">Recent Telemetry Readings</p>
-              <h2 className="mt-2 text-2xl font-bold text-white font-heading">Cell Log History</h2>
-            </div>
-            <Clock size={24} className="text-accent" />
-          </div>
-          <div className="overflow-x-auto rounded-3xl border border-white/10 shadow-soft">
-            <table className="w-full min-w-[640px] border-collapse text-left text-sm">
-              <thead className="bg-white/5 text-slate-400 font-heading">
-                <tr>
-                  <th className="px-5 py-4">Time</th>
-                  <th className="px-5 py-4">Cycle</th>
-                  <th className="px-5 py-4">Cell SOH</th>
-                  <th className="px-5 py-4">Temperature</th>
-                  <th className="px-5 py-4">Voltage</th>
-                  <th className="px-5 py-4">Operating Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {recentPredictionsList.map((row, idx) => (
-                  <tr key={`${row.time}-${idx}`} className="border-t border-white/10 hover:bg-white/5 transition font-medium">
-                    <td className="px-5 py-4 text-white font-mono">{row.time}</td>
-                    <td className="px-5 py-4">{row.cycle}</td>
-                    <td className="px-5 py-4 font-mono font-bold text-white">{row.soh}</td>
-                    <td className="px-5 py-4">{row.temp}</td>
-                    <td className="px-5 py-4 font-mono">{row.voltage}</td>
-                    <td className={`px-5 py-4 font-bold ${
-                      row.status === 'Healthy' ? 'text-success' : row.status === 'Warning' ? 'text-warning' : 'text-danger'
-                    }`}>{row.status}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </motion.div>
+          </main>
+        </div>
 
         {/* Footer */}
         <footer className="glass-card rounded-[2rem] border border-white/10 p-6 text-slate-400 shadow-soft flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -676,7 +480,177 @@ function App() {
             <span className="rounded-3xl bg-white/5 px-4 py-2 text-center border border-white/5">ECU Telemetry: Live</span>
           </div>
         </footer>
-      </main>
+      </div>
+
+      {/* Telemetry & AI Observation Logs Modal Overlay */}
+      <AnimatePresence>
+        {showLogsModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-slate-950/80 backdrop-blur-xl z-50 flex items-center justify-center p-4 sm:p-6 md:p-10 pointer-events-auto"
+          >
+            <motion.div
+              initial={{ scale: 0.95, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 20 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="relative w-full max-w-[1200px] max-h-[90vh] overflow-y-auto rounded-[2.5rem] border border-white/10 bg-[#080e1b]/80 p-6 md:p-8 shadow-[0_25px_70px_-15px_rgba(59,130,246,0.3)] flex flex-col gap-6"
+            >
+              {/* Modal Header */}
+              <div className="flex items-center justify-between pb-4 border-b border-white/10">
+                <div>
+                  <p className="text-slate-400 uppercase tracking-[0.24em] text-[10px] sm:text-xs font-heading">AI Predictive Diagnostics</p>
+                  <h2 className="text-xl sm:text-2xl font-bold text-white font-heading">Telemetry & AI Observation Logs</h2>
+                </div>
+                <button
+                  onClick={() => setShowLogsModal(false)}
+                  className="rounded-full bg-white/5 border border-white/10 p-2 text-slate-400 hover:text-white hover:bg-white/10 transition cursor-pointer"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              {/* Modal Content */}
+              <div className="flex flex-col gap-6">
+
+                {/* AI Observations (Diagnostic Insights) */}
+                <motion.div className="glass-card rounded-[2rem] border border-white/10 p-6 shadow-soft">
+                  <div className="flex items-center justify-between gap-3 mb-4">
+                    <div>
+                      <p className="text-slate-400 uppercase tracking-[0.24em] text-xs font-heading">AI Observations</p>
+                      <h2 className="text-xl font-bold text-white font-heading">Diagnostic Insights</h2>
+                    </div>
+                    <InsightsIcon size={24} className="text-accent" />
+                  </div>
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                    {[
+                      soh >= 90.0 ? 'Battery degradation is within the expected optimal range.' : 
+                      soh >= 80.0 ? 'Mild cell degradation noticed. Keep operating temperatures below 45°C.' :
+                      'Warning: High cell degradation! Internal resistance may spike under load.',
+                      temperature > 45 ? 'Critical temperature spike! Battery thermal throttling recommended.' : 'Thermal profile is normal and stable.',
+                      `Estimated capacity loss: ${round((1.0 - (capacity / maxCapacity)) * 100, 2)}% of original capacity.`,
+                      `Current cell efficiency: ${round(soh, 1)}%`
+                    ].map((insight, idx) => (
+                      <div key={idx} className="rounded-2xl border border-white/5 bg-slate-950/20 p-4 text-xs font-medium leading-relaxed text-slate-300">
+                        {insight}
+                      </div>
+                    ))}
+                  </div>
+                </motion.div>
+
+                {/* Forecast & Risk Assessment */}
+                <div className="grid gap-6 md:grid-cols-2">
+                  {/* Battery Aging Trend chart */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 24 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.45, delay: 0.2 }}
+                    className="glass-card rounded-[2rem] border border-white/10 p-6 shadow-soft flex flex-col justify-between"
+                  >
+                    <div className="flex items-center justify-between gap-4 mb-4">
+                      <div>
+                        <p className="text-slate-400 uppercase tracking-[0.24em] text-xs font-heading">Battery Aging Trend</p>
+                        <h2 className="text-xl font-bold text-white font-heading">Degradation Forecast</h2>
+                      </div>
+                      <Sparkles size={20} className="text-accent" />
+                    </div>
+                    <div className="h-64 relative">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={trendData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                          <defs>
+                            <linearGradient id="lineGradient" x1="0" y1="0" x2="1" y2="0">
+                              <stop offset="0%" stopColor="#3B82F6" stopOpacity={1} />
+                              <stop offset="100%" stopColor="#22C55E" stopOpacity={1} />
+                            </linearGradient>
+                          </defs>
+                          <XAxis dataKey="cycle" tick={{ fill: '#94A3B8', fontSize: 10 }} axisLine={false} tickLine={false} />
+                          <YAxis tick={{ fill: '#94A3B8', fontSize: 10 }} axisLine={false} tickLine={false} domain={[50, 100]} />
+                          <Tooltip contentStyle={{ background: '#0D1527', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 18 }} labelStyle={{ color: '#F8FAFC' }} itemStyle={{ color: '#F8FAFC' }} />
+                          <Line type="monotone" dataKey="soh" stroke="url(#lineGradient)" strokeWidth={3} dot={{ r: 3, fill: '#3B82F6' }} activeDot={{ r: 5 }} />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
+                    <div className="mt-4 rounded-2xl bg-slate-950/20 p-3 border border-white/5 flex items-center justify-between text-xs">
+                      <span className="text-slate-400 font-heading">Est. Coordinates</span>
+                      <span className="text-white font-bold font-heading">Cycle {cycle} — SOH {soh}%</span>
+                    </div>
+                  </motion.div>
+
+                  {/* Dynamic Risk Assessment Card */}
+                  <motion.div className="glass-card rounded-[2rem] border border-white/10 p-6 shadow-soft flex flex-col justify-between">
+                    <div className="flex items-center justify-between gap-3 mb-4">
+                      <div>
+                        <p className="text-slate-400 uppercase tracking-[0.24em] text-xs font-heading">Predictive Maintenance</p>
+                        <h2 className="text-xl font-bold text-white font-heading">Risk Assessment</h2>
+                      </div>
+                      <ShieldCheck size={20} className="text-success" />
+                    </div>
+                    <div className="grid gap-3 flex-1">
+                      {[
+                        { label: 'Current Degradation Risk', value: soh >= 90.0 ? 'LOW' : soh >= 80.0 ? 'MEDIUM' : 'HIGH' },
+                        { label: 'Next Recommended Inspection', value: soh >= 90.0 ? 'After 150 Cycles' : soh >= 80.0 ? 'After 50 Cycles' : 'INSPECT IMMEDIATELY' },
+                        { label: 'Battery Core Health Status', value: statusText }
+                      ].map((item) => (
+                        <div key={item.label} className="glass-card rounded-2xl border border-white/5 p-3 bg-slate-900/40 flex flex-col justify-center">
+                          <p className="text-[10px] uppercase tracking-[0.28em] text-slate-500 font-heading">{item.label}</p>
+                          <p className="mt-1 text-xs font-bold text-white font-heading">{item.value}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </motion.div>
+                </div>
+
+                {/* Row 5: Cell Log History Table (Full-Width) */}
+                <motion.div
+                  initial={{ opacity: 0, y: 24 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.45, delay: 0.1 }}
+                  className="glass-card rounded-[2rem] border border-white/10 p-6 shadow-soft"
+                >
+                  <div className="flex items-center justify-between gap-3 mb-4">
+                    <div>
+                      <p className="text-slate-400 uppercase tracking-[0.24em] text-xs font-heading">Recent Telemetry Readings</p>
+                      <h2 className="text-xl font-bold text-white font-heading">Cell Log History</h2>
+                    </div>
+                    <Clock size={20} className="text-accent" />
+                  </div>
+                  <div className="overflow-x-auto rounded-2xl border border-white/5 bg-slate-950/20 shadow-soft">
+                    <table className="w-full min-w-[500px] border-collapse text-left text-xs">
+                      <thead className="bg-white/5 text-slate-400 font-heading">
+                        <tr>
+                          <th className="px-4 py-3">Time</th>
+                          <th className="px-4 py-3">Cycle</th>
+                          <th className="px-4 py-3">Cell SOH</th>
+                          <th className="px-4 py-3">Temp</th>
+                          <th className="px-4 py-3">Voltage</th>
+                          <th className="px-4 py-3">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {recentPredictionsList.map((row, idx) => (
+                          <tr key={`${row.time}-${idx}`} className="border-t border-white/5 hover:bg-white/5 transition font-medium">
+                            <td className="px-4 py-3 text-white font-mono">{row.time}</td>
+                            <td className="px-4 py-3">{row.cycle}</td>
+                            <td className="px-4 py-3 font-mono font-bold text-white">{row.soh}</td>
+                            <td className="px-4 py-3">{row.temp}</td>
+                            <td className="px-4 py-3 font-mono">{row.voltage}</td>
+                            <td className={`px-4 py-3 font-bold ${
+                              row.status === 'Healthy' ? 'text-success' : row.status === 'Warning' ? 'text-warning' : 'text-danger'
+                            }`}>{row.status}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </motion.div>
+
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
